@@ -1,21 +1,72 @@
+import csv
+from foto import Foto
+
 def carica_da_file(file_path):
     """Carica le foto dal file, creando un nuovo anno ogni volta che compare per la prima volta"""
     # TODO
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            next(reader) # Salta la prima riga che contiene le intersezioni delle colonne
+            album = {}
+            for riga in reader:
+                if len(riga) == 5:
+                    codice, titolo, autore, mese, anno = riga
+                    int_anno = int(anno)
+                    foto = Foto(codice.strip(), titolo.strip(), autore.strip(), int(mese), int_anno)
+                    if int_anno not in album:
+                        album[int_anno] = []
+                    album[int_anno].append(foto)
+        print(f'File "{file_path}" caricato correttamente\n')
+        return album
+    except FileNotFoundError:
+        print(f'Errore: il file {file_path} non esiste')
+        return None
 
 
 def aggiungi_foto(album, codice, titolo, autore, mese, anno, file_path):
     """Aggiunge una foto all'album, creando l'anno al volo se non è ancora presente"""
     # TODO
+    if mese < 1 or mese > 12:
+        return None
+    if cerca_foto(album, codice) is not None:
+        return None
+    nuova_foto = Foto(codice, titolo, autore, mese, anno)
+    if anno not in album:
+        album[anno] = []
+    album[anno].append(nuova_foto)
+
+    try:
+        with open(file_path, 'a', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow([nuova_foto.codice, nuova_foto.titolo, nuova_foto.autore, nuova_foto.mese, nuova_foto.anno])
+        print('File aggiornato con la nuova foto\n')
+    except FileNotFoundError:
+        album[anno].remove(nuova_foto)
+        if not album[anno]: # Dopo che rimuovo la foto, l'anno rimane vuoto e devo pulire anche la chiave
+            del album[anno]
+        print(f'Errore: impossibile aggiornare il file {file_path} perché non esiste')
+        return None
+    return nuova_foto
 
 
 def cerca_foto(album, codice):
     """Cerca una foto nell'album dato il codice"""
     # TODO
+    for anno, lista_foto in album.items():
+        for foto in lista_foto:
+            if foto.codice == codice:
+                return f'{foto.codice}, {foto.titolo}, {foto.autore}, {foto.mese}, {foto.anno}'
+    return None
 
 
 def elenco_foto_anno_per_titolo(album, anno):
     """Ordina i titoli delle foto di un dato anno in ordine alfabetico"""
     # TODO
+    if anno not in album:
+        return None
+    titoli = [foto.titolo for foto in album[anno]]
+    return sorted(titoli)
 
 
 def main():
